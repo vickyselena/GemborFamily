@@ -1,0 +1,811 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>RumahKu - Premium Household Manager</title>
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            -webkit-tap-highlight-color: transparent;
+            background-color: #f3f4f6;
+            text-transform: uppercase;
+        }
+        input, select, textarea, button {
+            text-transform: uppercase;
+        }
+        .active-nav {
+            color: #6366f1;
+            position: relative;
+        }
+        .active-nav::after {
+            content: '';
+            position: absolute;
+            bottom: -8px;
+            width: 5px;
+            height: 5px;
+            background: #6366f1;
+            border-radius: 50%;
+        }
+        .view-section {
+            display: none;
+            animation: slideUp 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+        .view-section.active {
+            display: block;
+        }
+        @keyframes slideUp {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .glass-card {
+            background: rgba(255, 255, 255, 0.85);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.8);
+        }
+        .shadow-premium {
+            box-shadow: 0 20px 40px -12px rgba(0, 0, 0, 0.05);
+        }
+        .floating-nav {
+            bottom: 1.5rem;
+            left: 1.5rem;
+            right: 1.5rem;
+            border-radius: 1.5rem;
+            box-shadow: 0 10px 30px -5px rgba(0, 0, 0, 0.15);
+            transition: all 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+            overflow: hidden;
+            width: calc(100% - 3rem);
+            height: 72px;
+        }
+        .floating-nav.collapsed {
+            width: 56px;
+            height: 56px;
+            border-radius: 28px;
+            right: auto;
+            padding: 0;
+        }
+        .floating-nav.collapsed .nav-item {
+            display: none;
+        }
+        .floating-nav.collapsed #nav-toggle-btn {
+            width: 100%;
+            height: 100%;
+        }
+        input::placeholder { color: #cbd5e1; font-weight: 500; }
+        .custom-scrollbar::-webkit-scrollbar { display: none; }
+    </style>
+</head>
+<body class="text-slate-800 flex justify-center bg-slate-200">
+
+    <!-- Mobile Frame Container -->
+    <div class="w-full max-w-md bg-[#fbfcfe] min-h-screen shadow-[0_0_100px_rgba(0,0,0,0.1)] relative overflow-x-hidden pb-36">
+        
+        <!-- Mini Header Date/Time -->
+        <header class="px-8 pt-6 pb-2 flex justify-between items-center opacity-70">
+            <div class="flex flex-col">
+                <p id="header-day" class="text-[10px] font-black tracking-[0.2em] text-indigo-600 uppercase">SENIN</p>
+                <p id="header-date" class="text-[9px] font-bold text-slate-400 uppercase tracking-widest">01 JANUARI 2024</p>
+            </div>
+            <div class="text-right">
+                <p id="header-time" class="text-sm font-black text-slate-800 tracking-tighter italic">00:00</p>
+            </div>
+        </header>
+
+        <main class="px-6 pt-4">
+        
+        <!-- DASHBOARD -->
+        <section id="dashboard" class="view-section active">
+            <div class="bg-slate-900 p-8 rounded-[2.5rem] text-white shadow-2xl relative overflow-hidden mb-8">
+                <div class="absolute -right-6 -bottom-6 w-32 h-32 bg-indigo-500/20 rounded-full blur-3xl"></div>
+                <div class="relative z-10">
+                    <p class="text-[10px] font-bold opacity-50 mb-1 uppercase tracking-[0.2em]">Estimasi Total Saldo</p>
+                    <h3 id="dash-balance" class="text-2xl font-black mb-4 tracking-tight italic">RP 0,00</h3>
+                    
+                    <div class="flex gap-4 mb-6">
+                        <div class="flex-1">
+                            <p class="text-[8px] font-bold opacity-40 uppercase tracking-widest">Tunai (Cash)</p>
+                            <p id="dash-cash" class="text-xs font-black text-emerald-400 italic">RP 0,00</p>
+                        </div>
+                        <div class="w-px h-8 bg-white/10"></div>
+                        <div class="flex-1 text-right">
+                            <p class="text-[8px] font-bold opacity-40 uppercase tracking-widest">Bank (Debit)</p>
+                            <p id="dash-debit" class="text-xs font-black text-indigo-300 italic">RP 0,00</p>
+                        </div>
+                    </div>
+
+                    <div class="bg-white/10 px-4 py-2 rounded-2xl backdrop-blur-md border border-white/10 inline-block">
+                        <p id="dash-low-stock" class="text-[11px] font-bold text-indigo-200 uppercase tracking-widest">0 STOK MENIPIS</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="mb-8">
+                <div class="flex justify-between items-center mb-5">
+                    <h4 class="font-bold text-slate-900 tracking-tight flex items-center">
+                        <span class="w-8 h-8 bg-indigo-100 rounded-xl flex items-center justify-center mr-3 text-sm">📝</span> CATATAN TERAKHIR
+                    </h4>
+                    <button onclick="showView('finance')" class="text-indigo-600 text-[10px] font-black uppercase tracking-widest">SEMUA</button>
+                </div>
+                <div id="recent-finance" class="space-y-3"></div>
+            </div>
+
+            <div>
+                <h4 class="font-bold text-slate-900 tracking-tight mb-5 flex items-center">
+                    <span class="w-8 h-8 bg-amber-100 rounded-xl flex items-center justify-center mr-3 text-sm">🛒</span> BELI SEGERA
+                </h4>
+                <div id="quick-shopping" class="glass-card rounded-[2rem] border border-white shadow-premium overflow-hidden"></div>
+            </div>
+        </section>
+
+        <!-- FINANCE -->
+        <section id="finance" class="view-section">
+            <div class="mb-8">
+                <div class="flex items-center justify-between mb-6">
+                    <button onclick="changeMonth(-1)" class="w-12 h-12 flex items-center justify-center bg-white rounded-2xl shadow-sm text-indigo-600 font-black text-xl active:scale-90 transition-all">←</button>
+                    <h2 id="finance-month-label" class="text-xl font-extrabold text-slate-900 tracking-tight uppercase">JANUARI 2024</h2>
+                    <button onclick="changeMonth(1)" class="w-12 h-12 flex items-center justify-center bg-white rounded-2xl shadow-sm text-indigo-600 font-black text-xl active:scale-90 transition-all">→</button>
+                </div>
+                
+                <div class="grid grid-cols-1 gap-3">
+                    <div class="bg-emerald-500 p-5 rounded-[2rem] text-white shadow-lg shadow-emerald-200/50 relative overflow-hidden">
+                        <div class="absolute -right-4 -bottom-4 w-24 h-24 bg-white/10 rounded-full"></div>
+                        <p class="text-[10px] font-bold opacity-80 uppercase tracking-[0.2em] mb-1">Total Pemasukan</p>
+                        <h3 id="fin-month-in" class="text-2xl font-black tracking-tighter">RP 0,00</h3>
+                    </div>
+                    <div class="bg-rose-500 p-5 rounded-[2rem] text-white shadow-lg shadow-rose-200/50 relative overflow-hidden">
+                        <div class="absolute -right-4 -bottom-4 w-24 h-24 bg-white/10 rounded-full"></div>
+                        <p class="text-[10px] font-bold opacity-80 uppercase tracking-[0.2em] mb-1">Total Pengeluaran</p>
+                        <h3 id="fin-month-out" class="text-2xl font-black tracking-tighter">RP 0,00</h3>
+                    </div>
+                </div>
+            </div>
+
+            <div class="flex p-1.5 bg-slate-100 rounded-2xl mb-4 gap-1">
+                <button onclick="setFinTab('all')" id="tab-fin-all" class="flex-1 py-3 text-[9px] font-black uppercase tracking-tight rounded-xl transition-all bg-white shadow-sm text-indigo-600">SEMUA</button>
+                <button onclick="setFinTab('in')" id="tab-fin-in" class="flex-1 py-3 text-[9px] font-black uppercase tracking-tight rounded-xl transition-all text-slate-400">MASUK</button>
+                <button onclick="setFinTab('out')" id="tab-fin-out" class="flex-1 py-3 text-[9px] font-black uppercase tracking-tight rounded-xl transition-all text-slate-400">KELUAR</button>
+                <button onclick="setFinTab('transfer')" id="tab-fin-transfer" class="flex-1 py-3 text-[9px] font-black uppercase tracking-tight rounded-xl transition-all text-slate-400">PINDAH</button>
+            </div>
+
+            <div class="flex gap-2 mb-8">
+                <button onclick="toggleModal('finance-modal', true)" class="flex-[2] py-4 bg-slate-900 text-white rounded-[1.5rem] font-black text-[11px] uppercase tracking-[0.2em] shadow-xl flex items-center justify-center gap-3 active:scale-95 transition-all">
+                    <span class="text-lg">+</span> TRANSAKSI
+                </button>
+                <button onclick="toggleModal('category-list-modal', true)" class="flex-1 py-4 bg-indigo-50 text-indigo-600 rounded-[1.5rem] font-black text-[10px] uppercase tracking-widest active:scale-95 transition-all border border-indigo-100">
+                    KATEGORI
+                </button>
+            </div>
+
+            <div id="budget-overview" class="mb-8 hidden">
+                <h4 class="font-bold text-slate-900 tracking-tight mb-4 flex items-center text-sm">
+                    <span class="w-6 h-6 bg-rose-100 rounded-lg flex items-center justify-center mr-2 text-xs">📊</span> PANTAUAN ANGGARAN
+                </h4>
+                <div id="budget-list" class="space-y-3"></div>
+            </div>
+
+            <div class="flex justify-between items-center mb-4 px-1">
+                <h4 class="font-bold text-slate-900 tracking-tight text-sm uppercase">RIWAYAT TRANSAKSI</h4>
+                <div class="flex items-center gap-2">
+                    <span class="text-[9px] font-black text-slate-400 uppercase">TAMPILKAN:</span>
+                    <select onchange="window.state.finLimit = parseInt(this.value); window.state.finOffset = 0; window.renderAll();" class="bg-white border border-slate-200 rounded-lg px-2 py-1 text-[10px] font-black text-indigo-600 outline-none">
+                        <option value="5">5</option>
+                        <option value="10">10</option>
+                        <option value="15">15</option>
+                        <option value="0" selected>SEMUA</option>
+                    </select>
+                </div>
+            </div>
+
+            <div id="finance-list" class="space-y-4"></div>
+            
+            <!-- Pagination Controls -->
+            <div id="finance-pagination" class="mt-6 flex items-center justify-between px-2 hidden">
+                <button id="btn-prev-fin" onclick="changeFinPage(-window.state.finLimit)" class="px-4 py-2 bg-white border border-slate-100 shadow-sm rounded-xl text-[9px] font-black text-indigo-600 uppercase tracking-widest disabled:opacity-30">← SEBELUMNYA</button>
+                <span id="fin-page-info" class="text-[9px] font-black text-slate-400 uppercase">HAL 1</span>
+                <button id="btn-next-fin" onclick="changeFinPage(window.state.finLimit)" class="px-4 py-2 bg-white border border-slate-100 shadow-sm rounded-xl text-[9px] font-black text-indigo-600 uppercase tracking-widest disabled:opacity-30">SELANJUTNYA →</button>
+            </div>
+        </section>
+
+        <!-- SUPPLIES -->
+        <section id="supplies" class="view-section">
+            <div class="flex justify-between items-center mb-6 px-1">
+                <h3 class="font-black text-slate-900 tracking-tight">DATA STOK</h3>
+                <button onclick="toggleModal('supply-modal', true)" class="bg-indigo-600 text-white text-[10px] font-black px-5 py-3 rounded-2xl shadow-lg uppercase tracking-widest">+ BARANG</button>
+            </div>
+            <div id="supply-list"></div>
+        </section>
+
+        <!-- SHOPPING -->
+        <section id="shopping" class="view-section">
+            <div class="glass-card p-2 rounded-3xl shadow-premium mb-6 flex gap-2">
+                <input type="text" id="shop-item" placeholder="Butuh beli apa hari ini?" class="flex-1 px-5 py-3 bg-transparent outline-none font-bold text-slate-700 uppercase">
+                <button onclick="addShopping()" class="bg-slate-900 text-white w-12 h-12 rounded-2xl font-bold flex items-center justify-center shadow-lg active:scale-90 transition-all">+</button>
+            </div>
+            <div class="glass-card rounded-[2.5rem] shadow-premium overflow-hidden mb-4" id="shopping-list"></div>
+            <button onclick="clearCompletedShopping()" class="w-full py-2 text-[9px] font-black text-slate-300 uppercase tracking-widest">HAPUS SELESAI</button>
+        </section>
+
+    </main>
+
+    <!-- Modal Supply -->
+    <div id="supply-modal" class="fixed inset-0 z-50 flex items-end justify-center hidden bg-slate-900/40 backdrop-blur-sm transition-all">
+        <div class="absolute inset-0" onclick="toggleModal('supply-modal', false)"></div>
+        <div class="bg-white w-full max-w-md rounded-t-[3rem] p-10 shadow-2xl relative z-10">
+            <h3 class="font-black text-2xl mb-8 text-center">TAMBAH BARANG</h3>
+            <div class="space-y-5">
+                <input type="text" id="sup-name" placeholder="NAMA BARANG" class="w-full p-4 bg-slate-50 rounded-2xl border border-slate-100 font-bold uppercase">
+                <div class="grid grid-cols-2 gap-4">
+                    <input type="number" id="sup-qty" placeholder="JUMLAH" class="w-full p-4 bg-slate-50 rounded-2xl border border-slate-100 font-bold uppercase">
+                    <input type="text" id="sup-unit" placeholder="SATUAN" class="w-full p-4 bg-slate-50 rounded-2xl border border-slate-100 font-bold uppercase">
+                </div>
+                <div class="flex gap-4 pt-6">
+                    <button onclick="toggleModal('supply-modal', false)" class="flex-1 py-4 font-black text-slate-300 uppercase tracking-widest text-[10px]">BATAL</button>
+                    <button onclick="addSupply()" class="flex-1 py-4 bg-slate-900 text-white font-black rounded-2xl shadow-xl active:scale-95 transition-all text-[10px]">SIMPAN</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Finance -->
+    <div id="finance-modal" class="fixed inset-0 z-50 flex items-end justify-center hidden bg-slate-900/40 backdrop-blur-sm transition-all">
+        <div class="absolute inset-0" onclick="toggleModal('finance-modal', false)"></div>
+        <div class="bg-white w-full max-w-md rounded-t-[3rem] p-10 shadow-2xl relative z-10">
+            <h3 class="font-black text-2xl mb-8 text-center" id="fin-modal-title">CATAT KEUANGAN</h3>
+            <div class="space-y-5">
+                <input type="text" id="fin-desc" placeholder="KETERANGAN (MISAL: BELI SAYUR)" class="w-full p-4 bg-slate-50 rounded-2xl border border-slate-100 font-bold uppercase">
+                <div class="grid grid-cols-2 gap-4">
+                    <input type="text" id="fin-amount" oninput="formatCurrencyInput(this)" placeholder="JUMLAH (RP)" class="w-full p-4 bg-slate-50 rounded-2xl border border-slate-100 font-bold text-indigo-600 uppercase">
+                    <select id="fin-type" onchange="updateCategorySelect()" class="w-full p-4 bg-slate-50 rounded-2xl border border-slate-100 font-bold text-slate-600 uppercase">
+                        <option value="out">KELUAR</option>
+                        <option value="in">MASUK</option>
+                        <option value="transfer">TRANSFER</option>
+                    </select>
+                </div>
+                <div id="fin-category-wrapper">
+                    <select id="fin-category" class="w-full p-4 bg-slate-50 rounded-2xl border border-slate-100 font-bold text-slate-600 uppercase">
+                        <!-- Dynamic -->
+                    </select>
+                </div>
+                <div class="flex flex-col gap-2">
+                    <p class="text-[10px] font-bold text-slate-400 uppercase ml-1" id="fin-method-label">METODE PEMBAYARAN</p>
+                    <select id="fin-method" class="w-full p-4 bg-slate-50 rounded-2xl border border-slate-100 font-bold text-slate-600 uppercase">
+                        <option value="cash">TUNAI (CASH)</option>
+                        <option value="debit">BANK (DEBIT)</option>
+                    </select>
+                </div>
+                <div class="flex gap-4 pt-6">
+                    <button onclick="toggleModal('finance-modal', false)" class="flex-1 py-4 font-black text-slate-300 uppercase tracking-widest text-[10px]">BATAL</button>
+                    <button onclick="addFinance()" id="btn-save-finance" class="flex-1 py-4 bg-slate-900 text-white font-black rounded-2xl shadow-xl active:scale-95 transition-all text-[10px]">SIMPAN</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Category List -->
+    <div id="category-list-modal" class="fixed inset-0 z-50 flex items-end justify-center hidden bg-slate-900/40 backdrop-blur-sm transition-all">
+        <div class="absolute inset-0" onclick="toggleModal('category-list-modal', false)"></div>
+        <div class="bg-white w-full max-w-md rounded-t-[3rem] p-10 shadow-2xl relative z-10 max-h-[80vh] flex flex-col">
+            <h3 class="font-black text-2xl mb-6 text-center">KELOLA KATEGORI</h3>
+            <div id="category-items" class="flex-1 overflow-y-auto custom-scrollbar space-y-3 mb-6">
+                <!-- Dynamic -->
+            </div>
+            <button onclick="toggleModal('add-category-modal', true)" class="w-full py-4 bg-indigo-600 text-white font-black rounded-2xl shadow-xl active:scale-95 transition-all text-[10px] uppercase tracking-widest">+ KATEGORI BARU</button>
+        </div>
+    </div>
+
+    <!-- Modal Add Category -->
+    <div id="add-category-modal" class="fixed inset-0 z-50 flex items-end justify-center hidden bg-slate-900/40 backdrop-blur-sm transition-all">
+        <div class="absolute inset-0" onclick="toggleModal('add-category-modal', false)"></div>
+        <div class="bg-white w-full max-w-md rounded-t-[3rem] p-10 shadow-2xl relative z-10">
+            <h3 class="font-black text-xl mb-6 text-center">TAMBAH KATEGORI</h3>
+            <div class="space-y-4">
+                <input type="text" id="cat-name" placeholder="NAMA KATEGORI" class="w-full p-4 bg-slate-50 rounded-2xl border border-slate-100 font-bold uppercase">
+                <select id="cat-type" onchange="toggleBudgetInput()" class="w-full p-4 bg-slate-50 rounded-2xl border border-slate-100 font-bold uppercase">
+                    <option value="out">PENGELUARAN</option>
+                    <option value="in">PEMASUKAN</option>
+                </select>
+                <div id="budget-input-wrapper">
+                    <p class="text-[10px] font-bold text-slate-400 uppercase mb-2 ml-1">ANGGARAN BULANAN (OPSIONAL)</p>
+                    <input type="text" id="cat-budget" oninput="formatCurrencyInput(this)" placeholder="CONTOH: 1.000.000" class="w-full p-4 bg-slate-50 rounded-2xl border border-slate-100 font-bold text-rose-500 uppercase">
+                </div>
+                <div class="flex gap-4 pt-4">
+                    <button onclick="toggleModal('add-category-modal', false)" class="flex-1 py-4 font-black text-slate-300 uppercase tracking-widest text-[10px]">BATAL</button>
+                    <button id="btn-save-category" onclick="addCategory()" class="flex-1 py-4 bg-slate-900 text-white font-black rounded-2xl shadow-xl active:scale-95 transition-all text-[10px]">SIMPAN</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Nav Container (to keep fixed nav inside mobile view) -->
+    <div class="fixed bottom-0 w-full max-w-md z-40 px-6 pb-6 pointer-events-none">
+        <nav id="main-nav" class="floating-nav bg-white/90 backdrop-blur-xl px-5 flex justify-between items-center border border-white/50 relative pointer-events-auto">
+        <button id="nav-toggle-btn" onclick="toggleNav()" class="flex flex-col items-center justify-center gap-1 w-10 h-full text-indigo-600">
+            <svg id="toggle-icon" class="w-6 h-6 transition-transform duration-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16M4 18h16"></path></svg>
+        </button>
+        
+        <button onclick="showView('dashboard')" class="nav-item flex flex-col items-center gap-1 flex-1 active-nav" id="nav-dashboard">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"></path></svg>
+            <span class="text-[8px] font-black uppercase tracking-widest">HOME</span>
+        </button>
+        <button onclick="showView('finance')" class="nav-item flex flex-col items-center gap-1 flex-1 text-slate-400" id="nav-finance">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+            <span class="text-[8px] font-black uppercase tracking-widest">UANG</span>
+        </button>
+        <button onclick="showView('supplies')" class="nav-item flex flex-col items-center gap-1 flex-1 text-slate-400" id="nav-supplies">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"></path></svg>
+            <span class="text-[8px] font-black uppercase tracking-widest">STOK</span>
+        </button>
+            <button onclick="showView('shopping')" class="nav-item flex flex-col items-center gap-1 flex-1 text-slate-400" id="nav-shopping">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"></path></svg>
+                <span class="text-[8px] font-black uppercase tracking-widest">BELI</span>
+            </button>
+        </nav>
+    </div>
+</div> <!-- End of Mobile Frame Container -->
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+        import { getDatabase, ref, push, onValue, update, remove } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyCXk2rKN2XtLQpDO8aGWj-tfgFwGXYq2Ao",
+            authDomain: "project1-ed0d1.firebaseapp.com",
+            databaseURL: "https://project1-ed0d1-default-rtdb.asia-southeast1.firebasedatabase.app",
+            projectId: "project1-ed0d1",
+            storageBucket: "project1-ed0d1.firebasestorage.app",
+            messagingSenderId: "371384628609",
+            appId: "1:371384628609:web:11cdf5a78e4f47c81ea480"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getDatabase(app);
+        let state = { 
+            finance: [], 
+            supplies: [], 
+            shopping: [],
+            categories: [],
+            viewMonth: new Date().getMonth(),
+            viewYear: new Date().getFullYear(),
+            finTab: 'all',
+            finLimit: 0,
+            finOffset: 0,
+            editingCategoryId: null,
+            editingFinanceId: null
+        };
+        window.state = state;
+
+        const getMonthlyBudget = (cat) => {
+            if (!cat || !cat.monthlyBudgets) return 0;
+            const yearData = cat.monthlyBudgets[state.viewYear];
+            if (!yearData) return 0;
+            return yearData[state.viewMonth] || 0;
+        };
+
+        const monthNames = ["JANUARI", "FEBRUARI", "MARET", "APRIL", "MEI", "JUNI", "JULI", "AGUSTUS", "SEPTEMBER", "OKTOBER", "NOVEMBER", "DESEMBER"];
+
+        onValue(ref(db, 'finance'), (s) => {
+            const d = s.val(); state.finance = d ? Object.entries(d).map(([id, v]) => ({ id, ...v })).reverse() : []; renderAll();
+        });
+        onValue(ref(db, 'supplies'), (s) => {
+            const d = s.val(); state.supplies = d ? Object.entries(d).map(([id, v]) => ({ id, ...v })) : []; renderAll();
+        });
+        onValue(ref(db, 'shopping'), (s) => {
+            const d = s.val(); state.shopping = d ? Object.entries(d).map(([id, v]) => ({ id, ...v })) : []; renderAll();
+        });
+        onValue(ref(db, 'categories'), (s) => {
+            const d = s.val(); 
+            state.categories = d ? Object.entries(d).map(([id, v]) => ({ id, ...v })) : [];
+            if (!d) {
+                const defaults = [
+                    { name: 'GAJI', type: 'in' },
+                    { name: 'BONUS', type: 'in' },
+                    { name: 'MAKAN', type: 'out', monthlyBudgets: { [state.viewYear]: { [state.viewMonth]: 2000000 } } },
+                    { name: 'TRANSPORTASI', type: 'out', monthlyBudgets: { [state.viewYear]: { [state.viewMonth]: 500000 } } },
+                    { name: 'TAGIHAN', type: 'out', monthlyBudgets: { [state.viewYear]: { [state.viewMonth]: 1000000 } } }
+                ];
+                defaults.forEach(c => push(ref(db, 'categories'), c));
+            }
+            renderAll();
+        });
+
+        window.showView = (v) => {
+            document.querySelectorAll('.view-section').forEach(s => s.classList.remove('active'));
+            document.getElementById(v).classList.add('active');
+            document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active-nav', 'text-slate-400'));
+            document.querySelectorAll('.nav-item').forEach(n => n.id === 'nav-' + v ? n.classList.add('active-nav') : n.classList.add('text-slate-400'));
+        };
+
+        window.toggleModal = (id, s) => {
+            document.getElementById(id).classList.toggle('hidden', !s);
+            if (id === 'finance-modal') {
+                const btn = document.getElementById('btn-save-finance');
+                if (!s) {
+                    state.editingFinanceId = null;
+                    document.getElementById('fin-desc').value = '';
+                    document.getElementById('fin-amount').value = '';
+                    document.getElementById('fin-method').value = 'cash';
+                    document.getElementById('fin-type').value = 'out';
+                    if (btn) btn.innerText = 'SIMPAN';
+                } else {
+                    if (!state.editingFinanceId) {
+                        if (state.finTab !== 'all') document.getElementById('fin-type').value = state.finTab;
+                        updateCategorySelect();
+                    }
+                }
+            }
+            if (id === 'add-category-modal') {
+                const btn = document.getElementById('btn-save-category');
+                if (!s) {
+                    state.editingCategoryId = null;
+                    document.getElementById('cat-name').value = '';
+                    document.getElementById('cat-budget').value = '';
+                    if (btn) btn.innerText = 'SIMPAN';
+                } else {
+                    if (btn) btn.innerText = state.editingCategoryId ? 'UPDATE' : 'SIMPAN';
+                    if (!state.editingCategoryId && state.finTab !== 'all') {
+                        document.getElementById('cat-type').value = state.finTab;
+                        toggleBudgetInput();
+                    }
+                }
+            }
+        };
+
+        window.toggleNav = () => {
+            const nav = document.getElementById('main-nav');
+            const icon = document.getElementById('toggle-icon');
+            nav.classList.toggle('collapsed');
+            if(nav.classList.contains('collapsed')) {
+                icon.style.transform = 'scale(1.2)';
+                icon.innerHTML = '<path stroke-linecap="round" stroke-linejoin="round" d="M21 8.25c0-2.485-2.099-4.5-4.688-4.5-1.935 0-3.597 1.126-4.312 2.733-.715-1.607-2.377-2.733-4.313-2.733C5.1 3.75 3 5.765 3 8.25c0 7.22 9 12 9 12s9-4.78 9-12z"></path>';
+            } else {
+                icon.style.transform = 'scale(1)';
+                icon.innerHTML = '<path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16M4 18h16"></path>';
+            }
+        };
+
+        window.formatCurrencyInput = (el) => {
+            let val = el.value.replace(/[^0-9,]/g, "");
+            let parts = val.split(",");
+            let integerPart = parts[0].replace(/\D/g, "");
+            let decimalPart = parts.length > 1 ? "," + parts[1].substring(0, 2) : "";
+            if (integerPart === "" && parts.length > 1) integerPart = "0";
+            if (integerPart === "") { el.value = ""; return; }
+            el.value = parseInt(integerPart).toLocaleString('id-ID') + decimalPart;
+        };
+
+        const parseCurrencyValue = (str) => {
+            if (!str) return 0;
+            let clean = str.toString().replace(/\./g, "").replace(",", ".");
+            return parseFloat(clean) || 0;
+        };
+
+        window.changeMonth = (delta) => {
+            state.viewMonth += delta;
+            if (state.viewMonth > 11) { state.viewMonth = 0; state.viewYear++; }
+            if (state.viewMonth < 0) { state.viewMonth = 11; state.viewYear--; }
+            state.finOffset = 0; // Reset pagination
+            renderAll();
+        };
+
+        window.setFinTab = (tab) => {
+            state.finTab = tab;
+            state.finOffset = 0; // Reset pagination
+            renderAll();
+        };
+
+        window.changeFinPage = (delta) => {
+            state.finOffset += delta;
+            renderAll();
+        };
+
+        window.updateCategorySelect = () => {
+            const type = document.getElementById('fin-type').value;
+            const select = document.getElementById('fin-category');
+            const wrapper = document.getElementById('fin-category-wrapper');
+            const methodLabel = document.getElementById('fin-method-label');
+            const methodSelect = document.getElementById('fin-method');
+            const descInput = document.getElementById('fin-desc');
+
+            if (type === 'transfer') {
+                wrapper.classList.add('hidden');
+                methodLabel.innerText = "ARAH TRANSFER";
+                methodSelect.innerHTML = `
+                    <option value="cash_to_debit">TUNAI (CASH) → BANK (DEBIT)</option>
+                    <option value="debit_to_cash">BANK (DEBIT) → TUNAI (CASH)</option>
+                `;
+                if (!descInput.value) descInput.value = "TRANSFER SALDO";
+            } else {
+                wrapper.classList.remove('hidden');
+                methodLabel.innerText = "METODE PEMBAYARAN";
+                methodSelect.innerHTML = `
+                    <option value="cash">TUNAI (CASH)</option>
+                    <option value="debit">BANK (DEBIT)</option>
+                `;
+                const cats = state.categories.filter(c => c.type === type);
+                select.innerHTML = cats.map(c => `<option value="${c.name}">${c.name}</option>`).join('') || '<option value="">PILIH KATEGORI</option>';
+            }
+        };
+
+        window.toggleBudgetInput = () => {
+            const type = document.getElementById('cat-type').value;
+            document.getElementById('budget-input-wrapper').classList.toggle('hidden', type === 'in');
+        };
+
+        window.editCategory = (id) => {
+            const cat = state.categories.find(c => c.id === id);
+            if (!cat) return;
+            state.editingCategoryId = id;
+            document.getElementById('cat-name').value = cat.name;
+            document.getElementById('cat-type').value = cat.type;
+            const currentBudget = getMonthlyBudget(cat);
+            document.getElementById('cat-budget').value = currentBudget > 0 ? currentBudget.toLocaleString('id-ID') : '';
+            toggleBudgetInput();
+            toggleModal('add-category-modal', true);
+        };
+
+        window.addCategory = () => {
+            const name = document.getElementById('cat-name').value.toUpperCase();
+            const type = document.getElementById('cat-type').value;
+            const budget = parseCurrencyValue(document.getElementById('cat-budget').value);
+            if (!name) return alert('NAMA WAJIB DIISI');
+            if (state.editingCategoryId) {
+                const updates = { name, type };
+                if (type === 'out') updates[`monthlyBudgets/${state.viewYear}/${state.viewMonth}`] = budget;
+                update(ref(db, `categories/${state.editingCategoryId}`), updates);
+            } else {
+                const newCat = { name, type };
+                if (type === 'out') {
+                    newCat.monthlyBudgets = { [state.viewYear]: { [state.viewMonth]: budget } };
+                }
+                push(ref(db, 'categories'), newCat);
+            }
+            toggleModal('add-category-modal', false);
+        };
+
+        window.deleteCategory = (id) => confirm('HAPUS KATEGORI?') && remove(ref(db, `categories/${id}`));
+
+        window.editFinance = (id) => {
+            const f = state.finance.find(x => x.id === id);
+            if (!f) return;
+            state.editingFinanceId = id;
+            document.getElementById('fin-desc').value = f.desc;
+            document.getElementById('fin-amount').value = f.amount.toLocaleString('id-ID', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).replace(',00', '');
+            document.getElementById('fin-type').value = f.type;
+            updateCategorySelect();
+            document.getElementById('fin-method').value = f.method || 'cash';
+            if (f.type !== 'transfer') document.getElementById('fin-category').value = f.category;
+            const btn = document.getElementById('btn-save-finance');
+            if (btn) btn.innerText = 'UPDATE';
+            toggleModal('finance-modal', true);
+        };
+
+        window.addFinance = () => {
+            const desc = document.getElementById('fin-desc').value.toUpperCase();
+            const amount = parseCurrencyValue(document.getElementById('fin-amount').value);
+            const type = document.getElementById('fin-type').value;
+            const method = document.getElementById('fin-method').value;
+            let category = "TRANSFER";
+            if (type !== 'transfer') {
+                category = document.getElementById('fin-category').value.toUpperCase();
+                if (!category) return alert('PILIH KATEGORI');
+            }
+            if (!desc || !amount) return alert('LENGKAPI DATA');
+
+            const now = new Date();
+            const data = { 
+                desc, amount, type, category, method,
+                date: now.toLocaleDateString('id-ID'),
+                timestamp: now.getTime(),
+                month: state.viewMonth,
+                year: state.viewYear
+            };
+
+            if (state.editingFinanceId) {
+                update(ref(db, `finance/${state.editingFinanceId}`), data);
+            } else {
+                push(ref(db, 'finance'), data);
+            }
+            toggleModal('finance-modal', false);
+        };
+
+        window.deleteFinance = (id) => confirm('HAPUS?') && remove(ref(db, `finance/${id}`));
+
+        window.addSupply = () => {
+            const name = document.getElementById('sup-name').value.toUpperCase(); 
+            const qty = parseInt(document.getElementById('sup-qty').value);
+            const unit = document.getElementById('sup-unit').value.toUpperCase() || 'PCS';
+            if (!name || isNaN(qty)) return alert('LENGKAPI DATA');
+            push(ref(db, 'supplies'), { name, qty, unit });
+            toggleModal('supply-modal', false);
+        };
+
+        window.updateSupplyQty = (id, delta) => {
+            const item = state.supplies.find(s => s.id === id);
+            if (item) update(ref(db, `supplies/${id}`), { qty: Math.max(0, item.qty + delta) });
+        };
+
+        window.deleteSupply = (id) => confirm('HAPUS?') && remove(ref(db, `supplies/${id}`));
+
+        window.addShopping = () => {
+            const text = document.getElementById('shop-item').value.toUpperCase(); if (!text) return;
+            push(ref(db, 'shopping'), { text, done: false }); document.getElementById('shop-item').value = '';
+        };
+
+        window.toggleShopping = (id) => {
+            const item = state.shopping.find(s => s.id === id); if (item) update(ref(db, `shopping/${id}`), { done: !item.done });
+        };
+
+        window.clearCompletedShopping = () => state.shopping.forEach(i => i.done && remove(ref(db, `shopping/${i.id}`)));
+        window.addToShoppingFromSupply = (n) => { push(ref(db, 'shopping'), { text: n, done: false }); showView('shopping'); };
+
+        function updateLiveTime() {
+            const now = new Date();
+            const days = ["MINGGU", "SENIN", "SELASA", "RABU", "KAMIS", "JUMAT", "SABTU"];
+            document.getElementById('header-day').innerText = days[now.getDay()];
+            document.getElementById('header-date').innerText = `${now.getDate()} ${monthNames[now.getMonth()]} ${now.getFullYear()}`;
+            document.getElementById('header-time').innerText = now.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', hour12: false }).replace('.', ':');
+        }
+        setInterval(updateLiveTime, 1000);
+        updateLiveTime();
+
+        function renderAll() {
+            let totalBal = 0, cashBal = 0, debitBal = 0;
+            state.finance.forEach(f => {
+                const amt = f.amount || 0;
+                if (f.type === 'in') {
+                    totalBal += amt;
+                    if (f.method === 'cash') cashBal += amt; else debitBal += amt;
+                } else if (f.type === 'out') {
+                    totalBal -= amt;
+                    if (f.method === 'cash') cashBal -= amt; else debitBal -= amt;
+                } else if (f.type === 'transfer') {
+                    if (f.method === 'cash_to_debit') { cashBal -= amt; debitBal += amt; }
+                    else if (f.method === 'debit_to_cash') { cashBal += amt; debitBal -= amt; }
+                }
+            });
+
+            document.getElementById('dash-balance').innerText = 'RP ' + totalBal.toLocaleString('id-ID', { minimumFractionDigits: 2 });
+            document.getElementById('dash-cash').innerText = 'RP ' + cashBal.toLocaleString('id-ID', { minimumFractionDigits: 2 });
+            document.getElementById('dash-debit').innerText = 'RP ' + debitBal.toLocaleString('id-ID', { minimumFractionDigits: 2 });
+            document.getElementById('dash-low-stock').innerText = state.supplies.filter(s => s.qty <= 2).length + ' STOK MENIPIS';
+
+            document.getElementById('finance-month-label').innerText = `${monthNames[state.viewMonth]} ${state.viewYear}`;
+            const currentMonthFinance = state.finance.filter(f => f.month === state.viewMonth && f.year === state.viewYear);
+            const mIn = currentMonthFinance.filter(f => f.type === 'in').reduce((a, c) => a + c.amount, 0);
+            const mOut = currentMonthFinance.filter(f => f.type === 'out').reduce((a, c) => a + c.amount, 0);
+            document.getElementById('fin-month-in').innerText = 'RP ' + mIn.toLocaleString('id-ID', { minimumFractionDigits: 2 });
+            document.getElementById('fin-month-out').innerText = 'RP ' + mOut.toLocaleString('id-ID', { minimumFractionDigits: 2 });
+
+            let filteredCats = state.categories;
+            if (state.finTab !== 'all') filteredCats = state.categories.filter(c => c.type === state.finTab);
+            document.getElementById('category-items').innerHTML = filteredCats.length ? filteredCats.map(c => `
+                <div class="flex justify-between items-center p-4 bg-slate-50 rounded-2xl border border-slate-100">
+                    <div class="flex-1">
+                        <p class="font-black text-sm">${c.name}</p>
+                        <p class="text-[9px] font-bold uppercase ${c.type === 'in' ? 'text-emerald-500' : 'text-rose-500'}">
+                            ${c.type === 'in' ? 'PEMASUKAN' : 'PENGELUARAN'} • BUDGET: ${getMonthlyBudget(c).toLocaleString('id-ID')}
+                        </p>
+                    </div>
+                    <div class="flex gap-2">
+                        <button onclick="editCategory('${c.id}')" class="text-indigo-400 p-2">✎</button>
+                        <button onclick="deleteCategory('${c.id}')" class="text-rose-400 p-2">✕</button>
+                    </div>
+                </div>`).join('') : '<p class="text-center p-4 text-[10px] font-bold text-slate-300">KOSONG</p>';
+
+            const budgetList = document.getElementById('budget-list');
+            const outCatsWithBudget = state.categories.filter(c => c.type === 'out' && getMonthlyBudget(c) > 0);
+            if (state.finTab === 'out' && outCatsWithBudget.length > 0) {
+                document.getElementById('budget-overview').classList.remove('hidden');
+                budgetList.innerHTML = outCatsWithBudget.map(c => {
+                    const mBudget = getMonthlyBudget(c);
+                    const spent = currentMonthFinance.filter(f => f.category === c.name).reduce((a, curr) => a + curr.amount, 0);
+                    const per = Math.min(100, (spent / mBudget) * 100);
+                    return `
+                        <div class="glass-card p-4 rounded-2xl">
+                            <div class="flex justify-between items-end mb-2">
+                                <div><p class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-0.5">${c.name}</p>
+                                <p class="font-black text-xs ${spent > mBudget ? 'text-rose-600' : 'text-slate-800'}">RP ${spent.toLocaleString('id-ID')} / ${mBudget.toLocaleString('id-ID')}</p></div>
+                                <p class="text-[10px] font-black ${spent > mBudget ? 'text-rose-500' : 'text-indigo-500'}">${Math.round(per)}%</p>
+                            </div>
+                            <div class="w-full h-1.5 bg-slate-100 rounded-full overflow-hidden"><div class="h-full ${spent > mBudget ? 'bg-rose-500' : per > 80 ? 'bg-amber-500' : 'bg-indigo-500'}" style="width: ${per}%"></div></div>
+                        </div>`;
+                }).join('');
+            } else document.getElementById('budget-overview').classList.add('hidden');
+
+            ['all', 'in', 'out', 'transfer'].forEach(t => {
+                const btn = document.getElementById('tab-fin-' + t);
+                if (btn) {
+                    btn.className = state.finTab === t 
+                        ? "flex-1 py-3 text-[9px] font-black uppercase tracking-tight rounded-xl transition-all bg-white shadow-sm text-indigo-600"
+                        : "flex-1 py-3 text-[9px] font-black uppercase tracking-tight rounded-xl transition-all text-slate-400";
+                }
+            });
+
+            let displayFinance = currentMonthFinance;
+            if (state.finTab !== 'all') displayFinance = displayFinance.filter(f => f.type === state.finTab);
+            
+            // Pagination Logic
+            const totalItems = displayFinance.length;
+            const paginationEl = document.getElementById('finance-pagination');
+            let finalDisplay = displayFinance;
+
+            if (state.finLimit > 0 && totalItems > state.finLimit) {
+                paginationEl.classList.remove('hidden');
+                finalDisplay = displayFinance.slice(state.finOffset, state.finOffset + state.finLimit);
+                
+                const currentPage = Math.floor(state.finOffset / state.finLimit) + 1;
+                const totalPages = Math.ceil(totalItems / state.finLimit);
+                
+                document.getElementById('fin-page-info').innerText = `HAL ${currentPage} DARI ${totalPages}`;
+                document.getElementById('btn-prev-fin').disabled = state.finOffset <= 0;
+                document.getElementById('btn-next-fin').disabled = state.finOffset + state.finLimit >= totalItems;
+            } else {
+                paginationEl.classList.add('hidden');
+                if (state.finLimit > 0) {
+                    finalDisplay = displayFinance.slice(0, state.finLimit);
+                }
+            }
+
+            document.getElementById('finance-list').innerHTML = finalDisplay.length ? finalDisplay.map(f => {
+                let icon = f.type === 'in' ? '↓' : f.type === 'out' ? '↑' : '⇆';
+                let colorClass = f.type === 'in' ? 'bg-emerald-50 text-emerald-600' : f.type === 'out' ? 'bg-rose-50 text-rose-600' : 'bg-indigo-50 text-indigo-600';
+                let amountColor = f.type === 'in' ? 'text-emerald-600' : f.type === 'out' ? 'text-rose-600' : 'text-indigo-600';
+                let sign = f.type === 'in' ? '+' : f.type === 'out' ? '-' : '•';
+                let methodLabel = f.method === 'cash_to_debit' ? 'CASH → BANK' : f.method === 'debit_to_cash' ? 'BANK → CASH' : f.method.toUpperCase();
+                
+                return `<div class="glass-card p-5 rounded-[2rem] flex justify-between items-center">
+                    <div class="flex items-center gap-4">
+                        <button onclick="editFinance('${f.id}')" class="w-11 h-11 rounded-2xl flex items-center justify-center font-bold active:scale-90 transition-all ${colorClass}">${icon}</button>
+                        <div><p class="font-black text-slate-800 text-sm tracking-tight">${f.desc}</p>
+                        <div class="flex items-center gap-2"><p class="text-[9px] font-bold text-slate-400 uppercase tracking-widest">${f.category} • ${f.date}</p>
+                        <span class="px-1.5 py-0.5 rounded-md bg-slate-100 text-[7px] font-black text-slate-400 uppercase">${methodLabel}</span></div></div>
+                    </div>
+                    <div class="text-right"><p class="font-black ${amountColor} text-sm tracking-tighter">${sign} RP ${f.amount.toLocaleString('id-ID', { minimumFractionDigits: 2 })}</p>
+                    <button onclick="deleteFinance('${f.id}')" class="text-[8px] font-black text-slate-300 uppercase">HAPUS</button></div>
+                </div>`;
+            }).join('') : '<p class="text-center p-16 text-[10px] font-black text-slate-300">TIDAK ADA DATA</p>';
+
+            document.getElementById('recent-finance').innerHTML = state.finance.slice(0, 3).map(f => {
+                let icon = f.type === 'in' ? '↓' : f.type === 'out' ? '↑' : '⇆';
+                let colorClass = f.type === 'in' ? 'bg-emerald-50 text-emerald-600' : f.type === 'out' ? 'bg-rose-50 text-rose-600' : 'bg-indigo-50 text-indigo-600';
+                let amountColor = f.type === 'in' ? 'text-emerald-600' : f.type === 'out' ? 'text-rose-600' : 'text-indigo-600';
+                return `<div class="glass-card p-4 rounded-2xl flex justify-between items-center mb-3">
+                    <div class="flex items-center gap-3"><button onclick="editFinance('${f.id}')" class="w-9 h-9 rounded-xl flex items-center justify-center font-bold active:scale-90 transition-all ${colorClass}">${icon}</button>
+                    <div><p class="font-bold text-slate-800 text-xs">${f.desc}</p><p class="text-[8px] font-bold text-slate-300 uppercase">${f.category}</p></div></div>
+                    <p class="text-xs font-black ${amountColor}">${f.type === 'in' ? '+' : f.type === 'out' ? '-' : ''} ${f.amount.toLocaleString('id-ID')}</p>
+                </div>`;
+            }).join('') || '<p class="text-center p-8 text-[10px] font-bold text-slate-300">KOSONG</p>';
+
+            document.getElementById('quick-shopping').innerHTML = state.shopping.slice(0, 3).map(s => `
+                <div class="px-5 py-3 border-b border-slate-50 flex items-center gap-3"><div class="w-1.5 h-1.5 rounded-full ${s.done ? 'bg-slate-200' : 'bg-indigo-500'}"></div>
+                <span class="text-xs font-bold ${s.done ? 'line-through text-slate-300' : 'text-slate-700'}">${s.text}</span></div>`).join('') || '<p class="p-5 text-center text-[10px] font-bold text-slate-300">KOSONG</p>';
+
+            document.getElementById('supply-list').innerHTML = state.supplies.map(s => {
+                const low = s.qty <= 2;
+                return `<div class="glass-card p-6 rounded-[2rem] mb-4">
+                    <div class="flex justify-between items-start mb-4">
+                        <div><h4 class="font-black text-slate-800 text-lg leading-none mb-1">${s.name}</h4><p class="text-[10px] font-black ${low ? 'text-rose-500' : 'text-indigo-400'} uppercase">${s.qty} ${s.unit} TERSISA</p></div>
+                        <div class="flex gap-2"><button onclick="updateSupplyQty('${s.id}', -1)" class="w-8 h-8 rounded-xl bg-slate-50 flex items-center justify-center font-black">-</button>
+                        <button onclick="updateSupplyQty('${s.id}', 1)" class="w-8 h-8 rounded-xl bg-slate-900 text-white flex items-center justify-center font-black">+</button></div>
+                    </div>
+                    <div class="w-full h-1 bg-slate-50 rounded-full overflow-hidden mb-5"><div class="h-full ${low ? 'bg-rose-500' : 'bg-indigo-500'}" style="width: ${Math.min(100, (s.qty/10)*100)}%"></div></div>
+                    <div class="flex justify-between items-center"><button onclick="deleteSupply('${s.id}')" class="text-[9px] font-bold text-slate-300 uppercase">HAPUS</button>
+                    <button onclick="addToShoppingFromSupply('${s.name}')" class="px-4 py-2 bg-indigo-50 text-indigo-600 rounded-xl text-[10px] font-black uppercase">🛒 BELI LAGI</button></div>
+                </div>`;
+            }).join('') || '<p class="p-16 text-center text-[10px] font-black text-slate-300">BELUM ADA DATA</p>';
+
+            document.getElementById('shopping-list').innerHTML = state.shopping.map(s => `
+                <div class="px-6 py-5 border-b border-slate-50/50 flex items-center gap-5 cursor-pointer" onclick="toggleShopping('${s.id}')">
+                    <div class="w-7 h-7 rounded-xl border-2 flex items-center justify-center ${s.done ? 'bg-indigo-600 border-indigo-600' : 'border-slate-200'}">
+                        ${s.done ? '<svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="4"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"></path></svg>' : ''}
+                    </div>
+                    <span class="flex-1 text-[15px] font-extrabold tracking-tight ${s.done ? 'line-through text-slate-300' : 'text-slate-800'}">${s.text}</span>
+                </div>`).join('') || '<p class="p-16 text-center text-[10px] font-black text-slate-300">KOSONG ✨</p>';
+        }
+        window.renderAll = renderAll;
+    </script>
+</body>
+</html>
