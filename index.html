@@ -228,6 +228,70 @@
             <button onclick="clearCompletedShopping()" class="w-full py-2 text-[9px] font-black text-slate-300 uppercase tracking-widest">HAPUS SELESAI</button>
         </section>
 
+        <!-- SAVINGS & EMERGENCY FUND -->
+        <section id="savings" class="view-section">
+            <!-- Emergency Fund Header Card -->
+            <div class="bg-gradient-to-br from-amber-400 to-orange-600 p-8 rounded-[2.5rem] text-white shadow-2xl relative overflow-hidden mb-8">
+                <div class="absolute -right-6 -top-6 w-32 h-32 bg-white/10 rounded-full blur-2xl"></div>
+                <div class="relative z-10">
+                    <p class="text-[10px] font-black opacity-70 mb-1 uppercase tracking-[0.2em]">DANA DARURAT (EMERGENCY FUND)</p>
+                    <h3 id="ef-current" class="text-2xl font-black mb-1 italic tracking-tight">RP 0,00</h3>
+                    <p id="ef-target-label" class="text-[10px] font-bold opacity-80 mb-6 uppercase">DARI TARGET RP 0,00</p>
+                    
+                    <div class="w-full h-2 bg-black/10 rounded-full overflow-hidden mb-3">
+                        <div id="ef-progress-bar" class="h-full bg-white shadow-[0_0_10px_rgba(255,255,255,0.5)] transition-all duration-1000" style="width: 0%"></div>
+                    </div>
+                    <div class="flex justify-between items-center mb-4">
+                        <span id="ef-percent" class="text-[10px] font-black">0% AMAN</span>
+                        <button onclick="toggleModal('ef-config-modal', true)" class="text-[9px] font-black px-4 py-2 bg-white/20 rounded-xl backdrop-blur-md uppercase tracking-widest">TARGET</button>
+                    </div>
+                    <div class="flex gap-2">
+                        <button onclick="adjustEF(true)" class="flex-1 py-2 bg-emerald-500/30 rounded-xl text-[9px] font-black uppercase tracking-widest border border-emerald-400/30">MASUK (+)</button>
+                        <button onclick="adjustEF(false)" class="flex-1 py-2 bg-rose-500/30 rounded-xl text-[9px] font-black uppercase tracking-widest border border-rose-400/30">KELUAR (-)</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Savings Goals List -->
+            <div class="flex justify-between items-center mb-6 px-1">
+                <h4 class="font-black text-slate-900 tracking-tight uppercase flex items-center">
+                    <span class="w-8 h-8 bg-indigo-100 rounded-xl flex items-center justify-center mr-3 text-sm">🎯</span> TARGET TABUNGAN
+                </h4>
+                <button onclick="toggleModal('goal-modal', true)" class="text-indigo-600 text-[10px] font-black uppercase tracking-widest">+ TARGET</button>
+            </div>
+
+            <div id="savings-list" class="space-y-4 mb-10">
+                <!-- Dynamic Goals -->
+            </div>
+
+            <!-- Savings History Section -->
+            <div class="mb-20">
+                <div class="flex justify-between items-center mb-4 px-1">
+                    <h4 class="font-bold text-slate-900 tracking-tight text-sm uppercase flex items-center">
+                        <span class="w-6 h-6 bg-slate-100 rounded-lg flex items-center justify-center mr-2 text-xs">📜</span> RIWAYAT TRANSAKSI
+                    </h4>
+                    <div class="flex items-center gap-2">
+                        <span class="text-[9px] font-black text-slate-400 uppercase">TAMPIL:</span>
+                        <select onchange="window.state.savLimit = parseInt(this.value); window.state.savOffset = 0; window.renderAll();" class="bg-white border border-slate-200 rounded-lg px-2 py-1 text-[10px] font-black text-indigo-600 outline-none">
+                            <option value="5">5</option>
+                            <option value="10">10</option>
+                            <option value="15">15</option>
+                            <option value="0" selected>SEMUA</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div id="savings-history-list" class="space-y-3"></div>
+
+                <!-- Pagination Controls for Savings -->
+                <div id="savings-pagination" class="mt-6 flex items-center justify-between px-2 hidden">
+                    <button id="btn-prev-sav" onclick="changeSavPage(-window.state.savLimit)" class="px-4 py-2 bg-white border border-slate-100 shadow-sm rounded-xl text-[9px] font-black text-indigo-600 uppercase tracking-widest disabled:opacity-30">← SEBELUMNYA</button>
+                    <span id="sav-page-info" class="text-[9px] font-black text-slate-400 uppercase">HAL 1</span>
+                    <button id="btn-next-sav" onclick="changeSavPage(window.state.savLimit)" class="px-4 py-2 bg-white border border-slate-100 shadow-sm rounded-xl text-[9px] font-black text-indigo-600 uppercase tracking-widest disabled:opacity-30">SELANJUTNYA →</button>
+                </div>
+            </div>
+        </section>
+
     </main>
 
     <!-- Modal Supply -->
@@ -296,6 +360,57 @@
         </div>
     </div>
 
+    <!-- Modal Emergency Fund Config -->
+    <div id="ef-config-modal" class="fixed inset-0 z-50 flex items-end justify-center hidden bg-slate-900/40 backdrop-blur-sm transition-all">
+        <div class="absolute inset-0" onclick="toggleModal('ef-config-modal', false)"></div>
+        <div class="bg-white w-full max-w-md rounded-t-[3rem] p-10 shadow-2xl relative z-10">
+            <h3 class="font-black text-2xl mb-8 text-center">DANA DARURAT</h3>
+            <div class="space-y-5">
+                <div>
+                    <p class="text-[10px] font-bold text-slate-400 uppercase mb-2 ml-1">SALDO SAAT INI (SUDAH ADA)</p>
+                    <input type="text" id="ef-input-current" oninput="formatCurrencyInput(this)" placeholder="RP 0,00" class="w-full p-4 bg-slate-50 rounded-2xl border border-slate-100 font-bold text-emerald-600 uppercase">
+                </div>
+                <div>
+                    <p class="text-[10px] font-bold text-slate-400 uppercase mb-2 ml-1">NOMINAL TARGET UTAMA (TARGET RP)</p>
+                    <input type="text" id="ef-input-target-manual" oninput="formatCurrencyInput(this)" placeholder="CONTOH: 50.000.000" class="w-full p-4 bg-slate-50 rounded-2xl border border-slate-100 font-bold text-indigo-600 uppercase">
+                </div>
+                <div>
+                    <p class="text-[10px] font-bold text-slate-400 uppercase mb-2 ml-1">REFERENSI PENGELUARAN/BULAN</p>
+                    <input type="text" id="ef-input-monthly" oninput="formatCurrencyInput(this)" placeholder="RP 0,00" class="w-full p-4 bg-slate-50 rounded-2xl border border-slate-100 font-bold text-rose-500 uppercase">
+                </div>
+                <div class="flex gap-4 pt-6">
+                    <button onclick="toggleModal('ef-config-modal', false)" class="flex-1 py-4 font-black text-slate-300 uppercase tracking-widest text-[10px]">BATAL</button>
+                    <button onclick="saveEFConfig()" class="flex-1 py-4 bg-slate-900 text-white font-black rounded-2xl shadow-xl active:scale-95 transition-all text-[10px]">SIMPAN</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Add Savings Goal -->
+    <div id="goal-modal" class="fixed inset-0 z-50 flex items-end justify-center hidden bg-slate-900/40 backdrop-blur-sm transition-all">
+        <div class="absolute inset-0" onclick="toggleModal('goal-modal', false)"></div>
+        <div class="bg-white w-full max-w-md rounded-t-[3rem] p-10 shadow-2xl relative z-10">
+            <h3 class="font-black text-2xl mb-8 text-center" id="goal-modal-title">TARGET TABUNGAN</h3>
+            <div class="space-y-5">
+                <input type="text" id="goal-name" placeholder="NAMA TARGET (MISAL: BELI LAPTOP)" class="w-full p-4 bg-slate-50 rounded-2xl border border-slate-100 font-bold uppercase">
+                <div class="grid grid-cols-1 gap-4">
+                    <div>
+                        <p class="text-[10px] font-bold text-slate-400 uppercase mb-2 ml-1">NOMINAL TARGET (RP)</p>
+                        <input type="text" id="goal-target" oninput="formatCurrencyInput(this)" placeholder="RP 0,00" class="w-full p-4 bg-slate-50 rounded-2xl border border-slate-100 font-bold text-indigo-600 uppercase">
+                    </div>
+                    <div>
+                        <p class="text-[10px] font-bold text-slate-400 uppercase mb-2 ml-1">SALDO SAAT INI (RP)</p>
+                        <input type="text" id="goal-current" oninput="formatCurrencyInput(this)" placeholder="RP 0,00" class="w-full p-4 bg-slate-50 rounded-2xl border border-slate-100 font-bold text-emerald-600 uppercase">
+                    </div>
+                </div>
+                <div class="flex gap-4 pt-6">
+                    <button onclick="toggleModal('goal-modal', false)" class="flex-1 py-4 font-black text-slate-300 uppercase tracking-widest text-[10px]">BATAL</button>
+                    <button id="btn-save-goal" onclick="addSavingsGoal()" class="flex-1 py-4 bg-slate-900 text-white font-black rounded-2xl shadow-xl active:scale-95 transition-all text-[10px]">SIMPAN</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Modal Add Category -->
     <div id="add-category-modal" class="fixed inset-0 z-50 flex items-end justify-center hidden bg-slate-900/40 backdrop-blur-sm transition-all">
         <div class="absolute inset-0" onclick="toggleModal('add-category-modal', false)"></div>
@@ -319,6 +434,28 @@
         </div>
     </div>
 
+    <!-- Modal Savings Transaction (Model Catat Keuangan) -->
+    <div id="savings-trans-modal" class="fixed inset-0 z-50 flex items-end justify-center hidden bg-slate-900/40 backdrop-blur-sm transition-all">
+        <div class="absolute inset-0" onclick="toggleModal('savings-trans-modal', false)"></div>
+        <div class="bg-white w-full max-w-md rounded-t-[3rem] p-10 shadow-2xl relative z-10">
+            <h3 id="savings-trans-title" class="font-black text-2xl mb-8 text-center uppercase">MUTASI SALDO</h3>
+            <div class="space-y-5">
+                <div>
+                    <p class="text-[10px] font-bold text-slate-400 uppercase mb-2 ml-1">KETERANGAN</p>
+                    <input type="text" id="savings-trans-desc" placeholder="MISAL: TABUNGAN BULAN INI" class="w-full p-4 bg-slate-50 rounded-2xl border border-slate-100 font-bold uppercase">
+                </div>
+                <div>
+                    <p class="text-[10px] font-bold text-slate-400 uppercase mb-2 ml-1">NOMINAL (RP)</p>
+                    <input type="text" id="savings-trans-amount" oninput="formatCurrencyInput(this)" placeholder="RP 0,00" class="w-full p-4 bg-slate-50 rounded-2xl border border-slate-100 font-black text-indigo-600 text-xl uppercase">
+                </div>
+                <div class="flex gap-4 pt-6">
+                    <button onclick="toggleModal('savings-trans-modal', false)" class="flex-1 py-4 font-black text-slate-300 uppercase tracking-widest text-[10px]">BATAL</button>
+                    <button onclick="processSavingsTransaction()" class="flex-1 py-4 bg-slate-900 text-white font-black rounded-2xl shadow-xl active:scale-95 transition-all text-[10px]">SIMPAN</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Nav Container (to keep fixed nav inside mobile view) -->
     <div class="fixed bottom-0 w-full max-w-md z-40 px-6 pb-6 pointer-events-none">
         <nav id="main-nav" class="floating-nav bg-white/90 backdrop-blur-xl px-5 flex justify-between items-center border border-white/50 relative pointer-events-auto">
@@ -334,14 +471,18 @@
             <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
             <span class="text-[8px] font-black uppercase tracking-widest">UANG</span>
         </button>
+        <button onclick="showView('savings')" class="nav-item flex flex-col items-center gap-1 flex-1 text-slate-400" id="nav-savings">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M12 15a3 3 0 100-6 3 3 0 000 6z M12 9V7 M12 17v-2 M15 12h2 M7 12h2 M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+            <span class="text-[8px] font-black uppercase tracking-widest">TABUNGAN</span>
+        </button>
         <button onclick="showView('supplies')" class="nav-item flex flex-col items-center gap-1 flex-1 text-slate-400" id="nav-supplies">
             <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"></path></svg>
             <span class="text-[8px] font-black uppercase tracking-widest">STOK</span>
         </button>
-            <button onclick="showView('shopping')" class="nav-item flex flex-col items-center gap-1 flex-1 text-slate-400" id="nav-shopping">
-                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"></path></svg>
-                <span class="text-[8px] font-black uppercase tracking-widest">BELI</span>
-            </button>
+        <button onclick="showView('shopping')" class="nav-item flex flex-col items-center gap-1 flex-1 text-slate-400" id="nav-shopping">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"></path></svg>
+            <span class="text-[8px] font-black uppercase tracking-widest">BELI</span>
+        </button>
         </nav>
     </div>
 </div> <!-- End of Mobile Frame Container -->
@@ -367,13 +508,20 @@
             supplies: [], 
             shopping: [],
             categories: [],
+            savings: [],
+            savingsHistory: [],
+            efConfig: { current: 0, monthly: 0, months: 6 },
             viewMonth: new Date().getMonth(),
             viewYear: new Date().getFullYear(),
             finTab: 'all',
             finLimit: 0,
             finOffset: 0,
+            savLimit: 0,
+            savOffset: 0,
             editingCategoryId: null,
-            editingFinanceId: null
+            editingFinanceId: null,
+            editingGoalId: null,
+            savingsTransContext: null // { type: 'ef'|'goal', id: string|null, isPlus: boolean }
         };
         window.state = state;
 
@@ -394,6 +542,15 @@
         });
         onValue(ref(db, 'shopping'), (s) => {
             const d = s.val(); state.shopping = d ? Object.entries(d).map(([id, v]) => ({ id, ...v })) : []; renderAll();
+        });
+        onValue(ref(db, 'savings'), (s) => {
+            const d = s.val(); state.savings = d ? Object.entries(d).map(([id, v]) => ({ id, ...v })) : []; renderAll();
+        });
+        onValue(ref(db, 'savings_history'), (s) => {
+            const d = s.val(); state.savingsHistory = d ? Object.entries(d).map(([id, v]) => ({ id, ...v })).reverse() : []; renderAll();
+        });
+        onValue(ref(db, 'ef_config'), (s) => {
+            const d = s.val(); if (d) state.efConfig = d; renderAll();
         });
         onValue(ref(db, 'categories'), (s) => {
             const d = s.val(); 
@@ -420,6 +577,20 @@
 
         window.toggleModal = (id, s) => {
             document.getElementById(id).classList.toggle('hidden', !s);
+            if (id === 'goal-modal') {
+                if (!s) {
+                    state.editingGoalId = null;
+                    document.getElementById('goal-name').value = '';
+                    document.getElementById('goal-target').value = '';
+                    document.getElementById('goal-current').value = '';
+                    document.getElementById('btn-save-goal').innerText = 'SIMPAN';
+                }
+            }
+            if (id === 'ef-config-modal' && s) {
+                document.getElementById('ef-input-current').value = state.efConfig.current ? state.efConfig.current.toLocaleString('id-ID') : '';
+                document.getElementById('ef-input-monthly').value = state.efConfig.monthly ? state.efConfig.monthly.toLocaleString('id-ID') : '';
+                document.getElementById('ef-input-target-manual').value = state.efConfig.manualTarget ? state.efConfig.manualTarget.toLocaleString('id-ID') : '';
+            }
             if (id === 'finance-modal') {
                 const btn = document.getElementById('btn-save-finance');
                 if (!s) {
@@ -449,6 +620,13 @@
                         document.getElementById('cat-type').value = state.finTab;
                         toggleBudgetInput();
                     }
+                }
+            }
+            if (id === 'savings-trans-modal') {
+                if (!s) {
+                    document.getElementById('savings-trans-amount').value = '';
+                    document.getElementById('savings-trans-desc').value = '';
+                    state.savingsTransContext = null;
                 }
             }
         };
@@ -498,6 +676,11 @@
 
         window.changeFinPage = (delta) => {
             state.finOffset += delta;
+            renderAll();
+        };
+
+        window.changeSavPage = (delta) => {
+            state.savOffset += delta;
             renderAll();
         };
 
@@ -613,6 +796,89 @@
 
         window.deleteFinance = (id) => confirm('HAPUS?') && remove(ref(db, `finance/${id}`));
 
+        window.saveEFConfig = () => {
+            const current = parseCurrencyValue(document.getElementById('ef-input-current').value);
+            const monthly = parseCurrencyValue(document.getElementById('ef-input-monthly').value);
+            const manualTarget = parseCurrencyValue(document.getElementById('ef-input-target-manual').value);
+            update(ref(db, 'ef_config'), { current, monthly, manualTarget });
+            toggleModal('ef-config-modal', false);
+        };
+
+        window.addSavingsGoal = () => {
+            const name = document.getElementById('goal-name').value.toUpperCase();
+            const target = parseCurrencyValue(document.getElementById('goal-target').value);
+            const current = parseCurrencyValue(document.getElementById('goal-current').value);
+            if (!name || !target) return alert('LENGKAPI DATA');
+
+            if (state.editingGoalId) {
+                update(ref(db, `savings/${state.editingGoalId}`), { name, target, current });
+            } else {
+                push(ref(db, 'savings'), { name, target, current });
+            }
+            toggleModal('goal-modal', false);
+        };
+
+        window.editGoal = (id) => {
+            const g = state.savings.find(x => x.id === id);
+            if (!g) return;
+            state.editingGoalId = id;
+            document.getElementById('goal-name').value = g.name;
+            document.getElementById('goal-target').value = g.target.toLocaleString('id-ID');
+            document.getElementById('goal-current').value = g.current.toLocaleString('id-ID');
+            document.getElementById('btn-save-goal').innerText = 'UPDATE';
+            toggleModal('goal-modal', true);
+        };
+
+        window.deleteGoal = (id) => confirm('HAPUS TARGET INI?') && remove(ref(db, `savings/${id}`));
+
+        window.adjustEF = (isPlus) => {
+            state.savingsTransContext = { type: 'ef', id: null, isPlus };
+            document.getElementById('savings-trans-title').innerText = isPlus ? 'DANA DARURAT MASUK' : 'DANA DARURAT KELUAR';
+            toggleModal('savings-trans-modal', true);
+        };
+
+        window.adjustGoal = (id, isPlus) => {
+            const g = state.savings.find(x => x.id === id);
+            if (!g) return;
+            state.savingsTransContext = { type: 'goal', id, isPlus };
+            document.getElementById('savings-trans-title').innerText = isPlus ? `${g.name} MASUK` : `${g.name} KELUAR`;
+            toggleModal('savings-trans-modal', true);
+        };
+
+        window.processSavingsTransaction = () => {
+            const amount = parseCurrencyValue(document.getElementById('savings-trans-amount').value);
+            const desc = document.getElementById('savings-trans-desc').value.toUpperCase() || 'MUTASI TABUNGAN';
+            const ctx = state.savingsTransContext;
+            if (!ctx || amount <= 0) return alert('MASUKKAN NOMINAL YANG VALID');
+
+            let targetName = "";
+            if (ctx.type === 'ef') {
+                targetName = "DANA DARURAT";
+                const newCurrent = ctx.isPlus ? (state.efConfig.current || 0) + amount : Math.max(0, (state.efConfig.current || 0) - amount);
+                update(ref(db, 'ef_config'), { current: newCurrent });
+            } else if (ctx.type === 'goal') {
+                const g = state.savings.find(x => x.id === ctx.id);
+                if (g) {
+                    targetName = g.name;
+                    const newCurrent = ctx.isPlus ? g.current + amount : Math.max(0, g.current - amount);
+                    update(ref(db, `savings/${ctx.id}`), { current: newCurrent });
+                }
+            }
+
+            // Simpan ke Riwayat Tabungan
+            const now = new Date();
+            push(ref(db, 'savings_history'), {
+                targetName,
+                desc,
+                amount,
+                type: ctx.isPlus ? 'in' : 'out',
+                date: now.toLocaleDateString('id-ID'),
+                timestamp: now.getTime()
+            });
+
+            toggleModal('savings-trans-modal', false);
+        };
+
         window.addSupply = () => {
             const name = document.getElementById('sup-name').value.toUpperCase(); 
             const qty = parseInt(document.getElementById('sup-qty').value);
@@ -652,6 +918,101 @@
         updateLiveTime();
 
         function renderAll() {
+            // Calculate Average Expenses for EF Recommendation
+            const lastMonths = 3;
+            const now = new Date();
+            let totalExpensesLastPeriod = 0;
+            const expenseTrans = state.finance.filter(f => f.type === 'out');
+            expenseTrans.forEach(f => {
+                totalExpensesLastPeriod += f.amount;
+            });
+            // Simplified avg: total expenses / unique months in data or 1
+            const uniqueMonths = new Set(expenseTrans.map(f => `${f.month}-${f.year}`)).size || 1;
+            const avgMonthlyExpenses = totalExpensesLastPeriod / uniqueMonths;
+
+            // Render EF Card
+            const efMonthly = state.efConfig.monthly || avgMonthlyExpenses;
+            const efTarget = state.efConfig.manualTarget || (efMonthly * (state.efConfig.months || 6));
+            const efCurrent = state.efConfig.current || 0;
+            const efPercent = efTarget > 0 ? Math.min(100, Math.round((efCurrent / efTarget) * 100)) : 0;
+
+            document.getElementById('ef-current').innerText = 'RP ' + efCurrent.toLocaleString('id-ID', { minimumFractionDigits: 2 });
+            document.getElementById('ef-target-label').innerText = `DARI TARGET RP ${efTarget.toLocaleString('id-ID', { minimumFractionDigits: 2 })}`;
+            document.getElementById('ef-progress-bar').style.width = efPercent + '%';
+            document.getElementById('ef-percent').innerText = `${efPercent}% AMAN`;
+
+            // Pre-fill EF Modal
+            document.getElementById('ef-input-current').placeholder = efCurrent.toLocaleString('id-ID');
+            document.getElementById('ef-input-monthly').placeholder = efMonthly.toLocaleString('id-ID');
+            document.getElementById('ef-input-target-manual').placeholder = efTarget.toLocaleString('id-ID');
+
+            // Render Savings Goals
+            document.getElementById('savings-list').innerHTML = state.savings.length ? state.savings.map(g => {
+                const per = Math.min(100, Math.round((g.current / g.target) * 100));
+                return `
+                    <div class="glass-card p-6 rounded-[2rem] shadow-premium">
+                        <div class="flex justify-between items-start mb-4">
+                            <div>
+                                <h4 class="font-black text-slate-800 text-sm tracking-tight mb-1">${g.name}</h4>
+                                <p class="text-[10px] font-black text-indigo-500 uppercase">RP ${g.current.toLocaleString('id-ID', {minimumFractionDigits:2})} / ${g.target.toLocaleString('id-ID', {minimumFractionDigits:2})}</p>
+                            </div>
+                            <div class="flex gap-1">
+                                <button onclick="editGoal('${g.id}')" class="w-8 h-8 rounded-xl bg-slate-50 flex items-center justify-center text-xs">✎</button>
+                                <button onclick="deleteGoal('${g.id}')" class="w-8 h-8 rounded-xl bg-slate-50 flex items-center justify-center text-xs text-rose-400">✕</button>
+                            </div>
+                        </div>
+                        <div class="w-full h-1.5 bg-slate-100 rounded-full overflow-hidden mb-3">
+                            <div class="h-full bg-indigo-500" style="width: ${per}%"></div>
+                        </div>
+                        <div class="flex justify-between items-center mb-4">
+                            <span class="text-[9px] font-black text-slate-400">${per}% TERCAPAI</span>
+                            <span class="text-[9px] font-black text-slate-400">SISA RP ${(g.target - g.current).toLocaleString('id-ID', {minimumFractionDigits:2})}</span>
+                        </div>
+                        <div class="flex gap-2">
+                            <button onclick="adjustGoal('${g.id}', true)" class="flex-1 py-2 bg-emerald-50 text-emerald-600 rounded-xl text-[8px] font-black uppercase tracking-widest border border-emerald-100">MASUK (+)</button>
+                            <button onclick="adjustGoal('${g.id}', false)" class="flex-1 py-2 bg-rose-50 text-rose-600 rounded-xl text-[8px] font-black uppercase tracking-widest border border-rose-100">KELUAR (-)</button>
+                        </div>
+                    </div>
+                `;
+            }).join('') : '<p class="p-16 text-center text-[10px] font-black text-slate-300">BELUM ADA TARGET TABUNGAN</p>';
+
+            // Render Savings History
+            const totalSavItems = state.savingsHistory.length;
+            const savPaginationEl = document.getElementById('savings-pagination');
+            let finalSavDisplay = state.savingsHistory;
+
+            if (state.savLimit > 0 && totalSavItems > state.savLimit) {
+                savPaginationEl.classList.remove('hidden');
+                finalSavDisplay = state.savingsHistory.slice(state.savOffset, state.savOffset + state.savLimit);
+                const currentSavPage = Math.floor(state.savOffset / state.savLimit) + 1;
+                const totalSavPages = Math.ceil(totalSavItems / state.savLimit);
+                document.getElementById('sav-page-info').innerText = `HAL ${currentSavPage} DARI ${totalSavPages}`;
+                document.getElementById('btn-prev-sav').disabled = state.savOffset <= 0;
+                document.getElementById('btn-next-sav').disabled = state.savOffset + state.savLimit >= totalSavItems;
+            } else {
+                savPaginationEl.classList.add('hidden');
+                if (state.savLimit > 0) finalSavDisplay = state.savingsHistory.slice(0, state.savLimit);
+            }
+
+            document.getElementById('savings-history-list').innerHTML = finalSavDisplay.length ? finalSavDisplay.map(h => {
+                let icon = h.type === 'in' ? '↓' : '↑';
+                let colorClass = h.type === 'in' ? 'bg-emerald-50 text-emerald-600' : 'bg-rose-50 text-rose-600';
+                let amountColor = h.type === 'in' ? 'text-emerald-600' : 'text-rose-600';
+                let sign = h.type === 'in' ? '+' : '-';
+                return `
+                    <div class="glass-card p-4 rounded-2xl flex justify-between items-center">
+                        <div class="flex items-center gap-3">
+                            <div class="w-9 h-9 rounded-xl flex items-center justify-center font-bold ${colorClass}">${icon}</div>
+                            <div>
+                                <p class="font-black text-slate-800 text-[11px] leading-tight">${h.desc}</p>
+                                <p class="text-[8px] font-black text-slate-400 uppercase tracking-widest">${h.targetName} • ${h.date}</p>
+                            </div>
+                        </div>
+                        <p class="font-black ${amountColor} text-[11px] tracking-tighter">${sign} RP ${h.amount.toLocaleString('id-ID', { minimumFractionDigits: 2 })}</p>
+                    </div>
+                `;
+            }).join('') : '<p class="text-center p-12 text-[9px] font-black text-slate-300 uppercase">BELUM ADA RIWAYAT TABUNGAN</p>';
+
             let totalBal = 0, cashBal = 0, debitBal = 0;
             state.finance.forEach(f => {
                 const amt = f.amount || 0;
