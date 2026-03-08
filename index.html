@@ -281,6 +281,13 @@
                     </div>
                 </div>
 
+                <!-- Filter Tabs for Savings History -->
+                <div class="flex p-1.5 bg-slate-100 rounded-2xl mb-4 gap-1">
+                    <button onclick="setSavTab('all')" id="tab-sav-all" class="flex-1 py-3 text-[9px] font-black uppercase tracking-tight rounded-xl transition-all bg-white shadow-sm text-indigo-600">SEMUA</button>
+                    <button onclick="setSavTab('ef')" id="tab-sav-ef" class="flex-1 py-3 text-[9px] font-black uppercase tracking-tight rounded-xl transition-all text-slate-400">DARURAT</button>
+                    <button onclick="setSavTab('goal')" id="tab-sav-goal" class="flex-1 py-3 text-[9px] font-black uppercase tracking-tight rounded-xl transition-all text-slate-400">TABUNGAN</button>
+                </div>
+
                 <div id="savings-history-list" class="space-y-3"></div>
 
                 <!-- Pagination Controls for Savings -->
@@ -478,7 +485,8 @@
                 </div>
                 <div class="flex gap-4 pt-6">
                     <button onclick="toggleModal('savings-trans-modal', false)" class="flex-1 py-4 font-black text-slate-300 uppercase tracking-widest text-[10px]">BATAL</button>
-                    <button onclick="processSavingsTransaction()" class="flex-1 py-4 bg-slate-900 text-white font-black rounded-2xl shadow-xl active:scale-95 transition-all text-[10px]">SIMPAN</button>
+                    <button id="btn-delete-sav-trans" onclick="deleteSavingsHistory()" class="flex-1 py-4 bg-rose-500 text-white font-black rounded-2xl shadow-xl active:scale-95 transition-all text-[10px] hidden">HAPUS</button>
+                    <button id="btn-save-sav-trans" onclick="processSavingsTransaction()" class="flex-1 py-4 bg-slate-900 text-white font-black rounded-2xl shadow-xl active:scale-95 transition-all text-[10px]">SIMPAN</button>
                 </div>
             </div>
         </div>
@@ -580,10 +588,12 @@
             finOffset: 0,
             savLimit: 0,
             savOffset: 0,
+            savTab: 'all', // 'all', 'ef', 'goal'
             editingCategoryId: null,
             editingFinanceId: null,
             editingGoalId: null,
             savingsTransContext: null, // { type: 'ef'|'goal', id: string|null, isPlus: boolean }
+            editingSavHistoryId: null,
             hbContext: 'hb' // 'hb' or 'period'
         };
         window.state = state;
@@ -704,6 +714,9 @@
                     document.getElementById('savings-trans-amount').value = '';
                     document.getElementById('savings-trans-desc').value = '';
                     state.savingsTransContext = null;
+                    state.editingSavHistoryId = null;
+                    document.getElementById('btn-save-sav-trans').innerText = 'SIMPAN';
+                    document.getElementById('btn-delete-sav-trans').classList.add('hidden');
                 }
             }
         };
@@ -758,6 +771,12 @@
 
         window.changeSavPage = (delta) => {
             state.savOffset += delta;
+            renderAll();
+        };
+
+        window.setSavTab = (tab) => {
+            state.savTab = tab;
+            state.savOffset = 0;
             renderAll();
         };
 
@@ -922,12 +941,97 @@
             toggleModal('savings-trans-modal', true);
         };
 
+        window.editSavingsHistory = (id) => {
+            const h = state.savingsHistory.find(x => x.id === id);
+            if (!h) return;
+            state.editingSavHistoryId = id;
+            document.getElementById('savings-trans-desc').value = h.desc;
+            const formatted = h.amount.toLocaleString('id-ID', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+            document.getElementById('savings-trans-amount').value = formatted.replace(/,00$/, '');
+            document.getElementById('savings-trans-title').innerText = h.type === 'in' ? `${h.targetName} MASUK` : `${h.targetName} KELUAR`;
+            document.getElementById('btn-save-sav-trans').innerText = 'UPDATE';
+            document.getElementById('btn-delete-sav-trans').classList.remove('hidden');
+
+            // Restore context for potential amount recalculation
+            const isEF = h.targetName === 'DANA DARURAT';
+            const goalMatch = state.savings.find(g => g.name === h.targetName);
+            state.savingsTransContext = {
+                type: isEF ? 'ef' : 'goal',
+                id: isEF ? null : (goalMatch ? goalMatch.id : null),
+                isPlus: h.type === 'in'
+            };
+
+            toggleModal('savings-trans-modal', true);
+        };
+
+        window.deleteSavingsHistory = () => {
+            if (!state.editingSavHistoryId) return;
+            if (!confirm('HAPUS TRANSAKSI INI?')) return;
+
+            const h = state.savingsHistory.find(x => x.id === state.editingSavHistoryId);
+            if (h) {
+                // Reverse the effect on balance
+                const amt = h.amount;
+                if (h.targetName === 'DANA DARURAT') {
+                    const newCurrent = h.type === 'in'
+                        ? Math.max(0, (state.efConfig.current || 0) - amt)
+                        : (state.efConfig.current || 0) + amt;
+                    update(ref(db, 'ef_config'), { current: newCurrent });
+                } else {
+                    const g = state.savings.find(x => x.name === h.targetName);
+                    if (g) {
+                        const newCurrent = h.type === 'in'
+                            ? Math.max(0, g.current - amt)
+                            : g.current + amt;
+                        update(ref(db, `savings/${g.id}`), { current: newCurrent });
+                    }
+                }
+                remove(ref(db, `savings_history/${state.editingSavHistoryId}`));
+            }
+            toggleModal('savings-trans-modal', false);
+        };
+
         window.processSavingsTransaction = () => {
             const amount = parseCurrencyValue(document.getElementById('savings-trans-amount').value);
             const desc = document.getElementById('savings-trans-desc').value.toUpperCase() || 'MUTASI TABUNGAN';
             const ctx = state.savingsTransContext;
             if (!ctx || amount <= 0) return alert('MASUKKAN NOMINAL YANG VALID');
 
+            // If editing, reverse old effect first
+            if (state.editingSavHistoryId) {
+                const oldH = state.savingsHistory.find(x => x.id === state.editingSavHistoryId);
+                if (oldH) {
+                    const oldAmt = oldH.amount;
+                    if (oldH.targetName === 'DANA DARURAT') {
+                        const reversed = oldH.type === 'in'
+                            ? Math.max(0, (state.efConfig.current || 0) - oldAmt)
+                            : (state.efConfig.current || 0) + oldAmt;
+                        update(ref(db, 'ef_config'), { current: reversed });
+                        // Apply new amount
+                        const newCurrent = ctx.isPlus ? reversed + amount : Math.max(0, reversed - amount);
+                        update(ref(db, 'ef_config'), { current: newCurrent });
+                    } else {
+                        const g = state.savings.find(x => x.id === ctx.id);
+                        if (g) {
+                            const reversed = oldH.type === 'in'
+                                ? Math.max(0, g.current - oldAmt)
+                                : g.current + oldAmt;
+                            const newCurrent = ctx.isPlus ? reversed + amount : Math.max(0, reversed - amount);
+                            update(ref(db, `savings/${ctx.id}`), { current: newCurrent });
+                        }
+                    }
+                    // Update history record
+                    update(ref(db, `savings_history/${state.editingSavHistoryId}`), {
+                        desc,
+                        amount,
+                        type: ctx.isPlus ? 'in' : 'out'
+                    });
+                }
+                toggleModal('savings-trans-modal', false);
+                return;
+            }
+
+            // New transaction
             let targetName = "";
             if (ctx.type === 'ef') {
                 targetName = "DANA DARURAT";
@@ -1072,14 +1176,31 @@
                 `;
             }).join('') : '<p class="p-16 text-center text-[10px] font-black text-slate-300">BELUM ADA TARGET TABUNGAN</p>';
 
-            // Render Savings History
-            const totalSavItems = state.savingsHistory.length;
+            // Render Savings History Tabs
+            ['all', 'ef', 'goal'].forEach(t => {
+                const btn = document.getElementById('tab-sav-' + t);
+                if (btn) {
+                    btn.className = state.savTab === t
+                        ? "flex-1 py-3 text-[9px] font-black uppercase tracking-tight rounded-xl transition-all bg-white shadow-sm text-indigo-600"
+                        : "flex-1 py-3 text-[9px] font-black uppercase tracking-tight rounded-xl transition-all text-slate-400";
+                }
+            });
+
+            // Filter savings history by tab
+            let filteredSavHistory = state.savingsHistory;
+            if (state.savTab === 'ef') {
+                filteredSavHistory = state.savingsHistory.filter(h => h.targetName === 'DANA DARURAT');
+            } else if (state.savTab === 'goal') {
+                filteredSavHistory = state.savingsHistory.filter(h => h.targetName !== 'DANA DARURAT');
+            }
+
+            const totalSavItems = filteredSavHistory.length;
             const savPaginationEl = document.getElementById('savings-pagination');
-            let finalSavDisplay = state.savingsHistory;
+            let finalSavDisplay = filteredSavHistory;
 
             if (state.savLimit > 0 && totalSavItems > state.savLimit) {
                 savPaginationEl.classList.remove('hidden');
-                finalSavDisplay = state.savingsHistory.slice(state.savOffset, state.savOffset + state.savLimit);
+                finalSavDisplay = filteredSavHistory.slice(state.savOffset, state.savOffset + state.savLimit);
                 const currentSavPage = Math.floor(state.savOffset / state.savLimit) + 1;
                 const totalSavPages = Math.ceil(totalSavItems / state.savLimit);
                 document.getElementById('sav-page-info').innerText = `HAL ${currentSavPage} DARI ${totalSavPages}`;
@@ -1087,27 +1208,41 @@
                 document.getElementById('btn-next-sav').disabled = state.savOffset + state.savLimit >= totalSavItems;
             } else {
                 savPaginationEl.classList.add('hidden');
-                if (state.savLimit > 0) finalSavDisplay = state.savingsHistory.slice(0, state.savLimit);
+                if (state.savLimit > 0) finalSavDisplay = filteredSavHistory.slice(0, state.savLimit);
             }
 
             document.getElementById('savings-history-list').innerHTML = finalSavDisplay.length ? finalSavDisplay.map(h => {
+                const isEF = h.targetName === 'DANA DARURAT';
                 let icon = h.type === 'in' ? '↓' : '↑';
                 let colorClass = h.type === 'in' ? 'bg-emerald-50 text-emerald-600' : 'bg-rose-50 text-rose-600';
                 let amountColor = h.type === 'in' ? 'text-emerald-600' : 'text-rose-600';
                 let sign = h.type === 'in' ? '+' : '-';
+                
+                // Differentiation Styling
+                let leftBorder = isEF ? 'border-l-4 border-l-amber-500' : 'border-l-4 border-l-indigo-600';
+                let bgOverlay = isEF ? 'bg-amber-50/30' : 'bg-indigo-50/30';
+
                 return `
-                    <div class="glass-card p-4 rounded-2xl flex justify-between items-center">
+                    <div class="glass-card p-4 rounded-2xl flex justify-between items-center ${leftBorder} ${bgOverlay} mb-3">
                         <div class="flex items-center gap-3">
-                            <div class="w-9 h-9 rounded-xl flex items-center justify-center font-bold ${colorClass}">${icon}</div>
+                            <button onclick="editSavingsHistory('${h.id}')" class="w-10 h-10 rounded-xl flex items-center justify-center font-bold active:scale-90 transition-all shadow-sm ${colorClass}">
+                                ${icon}
+                            </button>
                             <div>
-                                <p class="font-black text-slate-800 text-[11px] leading-tight">${h.desc}</p>
-                                <p class="text-[8px] font-black text-slate-400 uppercase tracking-widest">${h.targetName} • ${h.date}</p>
+                                <p class="font-black text-slate-800 text-[11px] leading-tight mb-1 truncate">${h.desc}</p>
+                                <div class="flex items-center gap-2">
+                                    <span class="text-[8px] font-black text-slate-500 uppercase tracking-wider">${h.targetName}</span>
+                                    <span class="w-1 h-1 bg-slate-200 rounded-full"></span>
+                                    <span class="text-[8px] font-bold text-slate-400 uppercase tracking-widest">${h.date}</span>
+                                </div>
                             </div>
                         </div>
-                        <p class="font-black ${amountColor} text-[11px] tracking-tighter">${sign} RP ${h.amount.toLocaleString('id-ID', { minimumFractionDigits: 2 })}</p>
+                        <div class="text-right">
+                            <p class="font-black ${amountColor} text-[11px] tracking-tighter italic">${sign} RP ${h.amount.toLocaleString('id-ID', { minimumFractionDigits: 2 })}</p>
+                        </div>
                     </div>
                 `;
-            }).join('') : '<p class="text-center p-12 text-[9px] font-black text-slate-300 uppercase">BELUM ADA RIWAYAT TABUNGAN</p>';
+            }).join('') : '<p class="text-center p-16 text-[10px] font-black text-slate-300 uppercase tracking-[0.2em]">BELUM ADA RIWAYAT</p>';
 
             let totalBal = 0, cashBal = 0, debitBal = 0;
             state.finance.forEach(f => {
