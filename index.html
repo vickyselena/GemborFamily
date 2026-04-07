@@ -189,8 +189,8 @@
             </div>
 
             <div class="flex gap-2 mb-8">
-                <button onclick="toggleModal('finance-modal', true)" class="flex-[2] py-4 bg-slate-900 text-white rounded-[1.5rem] font-black text-[11px] uppercase tracking-[0.2em] shadow-xl flex items-center justify-center gap-3 active:scale-95 transition-all">
-                    <span class="text-lg">+</span> TRANSAKSI
+                <button onclick="toggleModal('finance-modal', true)" class="flex-[2] py-4 bg-slate-900 text-white rounded-[1.5rem] font-black text-[11px] uppercase tracking-[0.2em] shadow-xl flex items-center justify-center gap-2 active:scale-95 transition-all">
+                    <span class="text-lg leading-none -mt-1">+</span> TRANSAKSI
                 </button>
                 <button onclick="toggleModal('category-list-modal', true)" class="flex-1 py-4 bg-indigo-50 text-indigo-600 rounded-[1.5rem] font-black text-[10px] uppercase tracking-widest active:scale-95 transition-all border border-indigo-100">
                     KATEGORI
@@ -232,7 +232,7 @@
         <section id="supplies" class="view-section">
             <div class="flex justify-between items-center mb-6 px-1">
                 <h3 class="font-black text-slate-900 tracking-tight">DATA STOK</h3>
-                <button onclick="toggleModal('supply-modal', true)" class="bg-indigo-600 text-white text-[10px] font-black px-5 py-3 rounded-2xl shadow-lg uppercase tracking-widest">+ BARANG</button>
+                <button onclick="toggleModal('supply-modal', true)" class="bg-indigo-600 text-white text-[10px] font-black px-5 py-3 rounded-2xl shadow-lg uppercase tracking-widest flex items-center gap-1.5"><span class="text-lg leading-none -mt-1">+</span> BARANG</button>
             </div>
             <div id="supply-list"></div>
         </section>
@@ -276,7 +276,7 @@
                 <h4 class="font-black text-slate-900 tracking-tight uppercase flex items-center">
                     <span class="w-8 h-8 bg-indigo-100 rounded-xl flex items-center justify-center mr-3 text-sm">🎯</span> TARGET TABUNGAN
                 </h4>
-                <button onclick="toggleModal('goal-modal', true)" class="text-indigo-600 text-[10px] font-black uppercase tracking-widest">+ TARGET</button>
+                <button onclick="toggleModal('goal-modal', true)" class="text-indigo-600 text-[10px] font-black uppercase tracking-widest flex items-center gap-1.5"><span class="text-lg leading-none -mt-1">+</span> TARGET</button>
             </div>
 
             <div id="savings-list" class="space-y-4 mb-10">
@@ -410,7 +410,9 @@
             <div id="category-items" class="flex-1 overflow-y-auto custom-scrollbar space-y-3 mb-6">
                 <!-- Dynamic -->
             </div>
-            <button onclick="toggleModal('add-category-modal', true)" class="w-full py-4 bg-indigo-600 text-white font-black rounded-2xl shadow-xl active:scale-95 transition-all text-[10px] uppercase tracking-widest">+ KATEGORI BARU</button>
+            <button onclick="toggleModal('add-category-modal', true)" class="w-full py-4 bg-indigo-600 text-white font-black rounded-2xl shadow-xl active:scale-95 transition-all text-[10px] uppercase tracking-widest flex items-center justify-center gap-2">
+                    <span class="text-lg leading-none -mt-1">+</span> KATEGORI BARU
+                </button>
         </div>
     </div>
 
