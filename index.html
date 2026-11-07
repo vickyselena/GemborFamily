@@ -664,10 +664,13 @@
                 <button type="button" class="q-chip" data-act="quick" data-target="tfAmount" data-amt="500000">+500rb</button>
                 <button type="button" class="q-chip" data-act="quick" data-target="tfAmount" data-amt="1000000">+1jt</button>
               </div>
-              <button class="btn dark" type="submit" id="btnTransfer">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M8 3 4 7l4 4"/><path d="M4 7h16"/><path d="m16 21 4-4-4-4"/><path d="M20 17H4"/></svg>
-                <span class="b-label">Pindahkan Dana</span>
-              </button>
+              <div style="display:flex;gap:10px">
+                <button class="btn dark" type="submit" id="btnTransfer" style="flex:1">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M8 3 4 7l4 4"/><path d="M4 7h16"/><path d="m16 21 4-4-4-4"/><path d="M20 17H4"/></svg>
+                  <span class="b-label">Pindahkan Dana</span>
+                </button>
+                <button class="btn light" type="button" id="btnTransferCancel" data-act="cancel-tf-edit" hidden>Batal</button>
+              </div>
             </form>
             <div id="tfList"></div>
           </div>
@@ -1004,7 +1007,7 @@ const S = {
   loading: true,
   monthStats: {},
 };
-const ui = { incomeType: "gaji", incomeMethod: "cash", entryMethod: "cash", tfDir: "toCash", q: "", openCat: null, editIncome: null, editEntry: null, editItem: null, pickerYear: now.getFullYear() };
+const ui = { incomeType: "gaji", incomeMethod: "cash", entryMethod: "cash", tfDir: "toCash", q: "", openCat: null, editIncome: null, editEntry: null, editItem: null, editTransfer: null, pickerYear: now.getFullYear() };
 
 /* ---------- Elemen ---------- */
 const $ = id => document.getElementById(id);
@@ -1108,7 +1111,7 @@ async function selectMonth(key){
   ui.pickerYear = p.y;
   ui.openCat = null; ui.editItem = null; ui.q = "";
   S.pickedCat = null;
-  exitIncomeEdit(); exitEntryEdit();
+  exitIncomeEdit(); exitEntryEdit(); exitTransferEdit();
   $("entrySearch").value = "";
   hideToast();
   updateMonthChrome();
@@ -1520,7 +1523,11 @@ function renderTransfers(){
     ? 'Debit · Bank <b>→</b> Tunai · Dompet'
     : 'Tunai · Dompet <b>→</b> Debit · Bank';
   $("tfLabel").placeholder = toCash ? "Keterangan — cth. Tarik ATM BCA" : "Keterangan — cth. Setor tunai";
-  $("btnTransfer").querySelector(".b-label").textContent = toCash ? "Tarik Tunai" : "Setor ke Bank";
+  const editing = !!ui.editTransfer;
+  const btn = $("btnTransfer");
+  btn.classList.toggle("editing", editing);
+  btn.querySelector(".b-label").textContent = editing ? "Simpan Perubahan" : (toCash ? "Tarik Tunai" : "Setor ke Bank");
+  $("btnTransferCancel").hidden = !editing;
   $("tfCount").textContent = S.transfers.length + " transfer";
   $("tfList").innerHTML = S.transfers.length === 0
     ? '<div class="empty" style="padding:26px 20px"><span class="ring">' + ICON.swap +
@@ -1528,11 +1535,13 @@ function renderTransfers(){
     : S.transfers.map(r => {
         const c = r.dir === "toCash";
         const day = fmtDay(r.createdAt);
+        const title = r.label || (c ? "Tarik tunai" : "Setor ke bank");
         return '<div class="row-item"><span class="row-ic tf">' + (c ? ICON.atm : ICON.card) + "</span>" +
-          '<div class="row-main"><p class="row-name">' + esc(r.label || (c ? "Tarik tunai" : "Setor ke bank")) + "</p>" +
+          '<div class="row-main"><p class="row-name">' + esc(title) + "</p>" +
           '<p class="row-sub">' + (c ? mTag("debit") + " → " + mTag("cash") : mTag("cash") + " → " + mTag("debit")) + (day ? " · " + day : "") + "</p></div>" +
           '<span class="row-amt tnum" style="color:' + (c ? "var(--moss)" : "var(--ocean)") + '">' + fmtIDR(r.amount) + "</span>" +
-          '<button class="icon-btn" data-act="del-tf" data-id="' + r.id + '" aria-label="Hapus transfer">' + ICON.trash + "</button></div>";
+          '<button class="icon-btn edit" data-act="edit-tf" data-id="' + r.id + '" aria-label="Ubah ' + esc(title) + '">' + ICON.pencil + "</button>" +
+          '<button class="icon-btn" data-act="del-tf" data-id="' + r.id + '" aria-label="Hapus ' + esc(title) + '">' + ICON.trash + "</button></div>";
       }).join("");
 }
 
@@ -1656,6 +1665,28 @@ function exitEntryEdit(){
   btn.classList.remove("editing");
   btn.querySelector(".b-label").textContent = "Catat Pengeluaran";
   $("btnEntryCancel").hidden = true;
+}
+function enterTransferEdit(id){
+  const r = S.transfers.find(x => x.id === id); if (!r) return;
+  ui.editTransfer = r;
+  ui.tfDir = r.dir === "toDebit" ? "toDebit" : "toCash";
+  renderTransfers();
+  $("tfLabel").value = r.label || "";
+  $("tfAmount").value = fmtNum(r.amount);
+  const btn = $("btnTransfer");
+  btn.classList.add("editing");
+  btn.querySelector(".b-label").textContent = "Simpan Perubahan";
+  $("btnTransferCancel").hidden = false;
+  $("formTransfer").closest(".card")?.scrollIntoView({ behavior: "smooth", block: "nearest" });
+  $("tfLabel").focus();
+}
+function exitTransferEdit(){
+  ui.editTransfer = null;
+  $("tfLabel").value = ""; $("tfAmount").value = "";
+  const btn = $("btnTransfer");
+  btn.classList.remove("editing");
+  btn.querySelector(".b-label").textContent = ui.tfDir === "toCash" ? "Tarik Tunai" : "Setor ke Bank";
+  $("btnTransferCancel").hidden = true;
 }
 
 async function addIncome(){
@@ -1901,16 +1932,24 @@ async function addTransfer(){
   const amount = parseSen($("tfAmount").value);
   if (amount <= 0) return toast("Nominal transfer harus lebih dari nol.", false);
   const t = totals();
-  const avail = toCash ? t.debitBal : t.cashBal;
+  const oldSign = ui.editTransfer ? (ui.editTransfer.dir === "toCash" ? 1 : -1) : 0;
+  const oldAmt = ui.editTransfer ? ui.editTransfer.amount : 0;
+  const avail = toCash ? (t.debitBal + oldSign * oldAmt) : (t.cashBal - oldSign * oldAmt);
   if (amount > avail && !window.confirm(
       "Saldo " + (toCash ? "debit" : "tunai") + " tercatat hanya " + fmtIDR(avail) +
       ".\nTetap lanjutkan perpindahan " + fmtIDR(amount) + "?")) return;
   const btn = $("btnTransfer"); btn.disabled = true;
   try {
-    const id = await nextId("transfers");
-    await api("transfers/" + id, "PUT", { id, dir: ui.tfDir, label, amount, monthKey: MONTH_KEY, createdAt: Date.now() });
-    $("tfLabel").value = ""; $("tfAmount").value = "";
-    toast((toCash ? "Tarik tunai " : "Setor ke bank ") + fmtIDR(amount) + " tercatat.");
+    if (ui.editTransfer){
+      await api("transfers/" + ui.editTransfer.id, "PUT", { ...ui.editTransfer, dir: ui.tfDir, label, amount, monthKey: MONTH_KEY, updatedAt: Date.now() });
+      exitTransferEdit();
+      toast("Perubahan transfer disimpan.");
+    } else {
+      const id = await nextId("transfers");
+      await api("transfers/" + id, "PUT", { id, dir: ui.tfDir, label, amount, monthKey: MONTH_KEY, createdAt: Date.now() });
+      $("tfLabel").value = ""; $("tfAmount").value = "";
+      toast((toCash ? "Tarik tunai " : "Setor ke bank ") + fmtIDR(amount) + " tercatat.");
+    }
     await refreshQuiet();
   } catch(e){ toast("Gagal terhubung ke Firebase Database.", false); }
   btn.disabled = false;
@@ -1921,6 +1960,7 @@ async function delTransfer(id){
   if (!rec) return;
   try {
     await api("transfers/" + id, "DELETE");
+    if (ui.editTransfer && ui.editTransfer.id === id) exitTransferEdit();
     toastAct("Transfer dihapus.", "Urungkan", async () => {
       try {
         await api("transfers/" + id, "PUT", { id, dir: rec.dir, label: rec.label, amount: rec.amount, monthKey: MONTH_KEY, createdAt: rec.createdAt || Date.now(), restoredAt: Date.now() });
@@ -1993,8 +2033,8 @@ async function exportJSON(){
 
 /* ---------- Event global (delegasi) ---------- */
 const WRITE_ACTS = new Set([
-  "quick", "edit-income", "edit-entry", "edit-bitem", "del-income", "del-entry", "del-cat",
-  "del-bitem", "del-tf", "cat-method", "cancel-income-edit", "cancel-entry-edit", "cancel-bitem-edit"
+  "quick", "edit-income", "edit-entry", "edit-bitem", "edit-tf", "del-income", "del-entry", "del-cat",
+  "del-bitem", "del-tf", "cat-method", "cancel-income-edit", "cancel-entry-edit", "cancel-bitem-edit", "cancel-tf-edit"
 ]);
 document.addEventListener("click", e => {
   const el = e.target.closest("[data-act]");
@@ -2024,6 +2064,8 @@ document.addEventListener("click", e => {
   else if (act === "ex-method"){ ui.entryMethod = mOf(el.dataset.m); renderKeluar(); }
   else if (act === "cat-method") setCatMethod(Number(el.dataset.id), el.dataset.m);
   else if (act === "tf-dir"){ ui.tfDir = el.dataset.d === "toDebit" ? "toDebit" : "toCash"; renderTransfers(); }
+  else if (act === "edit-tf") enterTransferEdit(Number(el.dataset.id));
+  else if (act === "cancel-tf-edit") exitTransferEdit();
   else if (act === "del-tf") delTransfer(Number(el.dataset.id));
   else if (act === "del-income") delIncome(Number(el.dataset.id));
   else if (act === "del-entry") delEntry(Number(el.dataset.id));
